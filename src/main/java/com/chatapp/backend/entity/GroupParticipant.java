@@ -1,0 +1,38 @@
+package com.chatapp.backend.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = "group_memberships")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class GroupParticipant {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id", nullable = false)
+    private Group group;
+
+    @CreationTimestamp
+    @Column(name = "joined_at", updatable = false)
+    private Instant joinedAt;
+
+    @Enumerated(EnumType.STRING)
+    private GroupRole role = GroupRole.MEMBER;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+}
