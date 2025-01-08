@@ -40,9 +40,6 @@ public class User extends BaseEntity {
     @Column(name = "last_seen_at")
     private Instant lastSeenAt;
 
-    @Column(name = "unread_messages_count")
-    private int unreadMessagesCount;
-
     @OneToMany(mappedBy = "sender")
     @BatchSize(size = 20)
     @Builder.Default

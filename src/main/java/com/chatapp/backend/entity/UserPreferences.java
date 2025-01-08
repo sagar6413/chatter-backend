@@ -12,4 +12,5 @@ public class UserPreferences {
     private String theme = "light";
 
     // Add more user preferences as needed
+    
 }
