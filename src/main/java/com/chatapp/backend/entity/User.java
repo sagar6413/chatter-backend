@@ -1,8 +1,9 @@
 package com.chatapp.backend.entity;
 
+import com.chatapp.backend.entity.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -10,40 +11,56 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users",
+        indexes = {
+                @Index(name = "idx_user_username", columnList = "username", unique = true),
+                @Index(name = "idx_user_last_active", columnList = "last_active_at")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "username", unique = true, nullable = false)
+public class User extends BaseEntity {
+    @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 
-    @Column(name = "display_name", nullable = false)
+    @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
-
     @Column(name = "password", nullable = false)
-    private String password;
+    private String password; // Consider using a more secure field for password storage
 
-    @UpdateTimestamp
-    @Column(name = "last_active_at")
-    private Instant lastActiveAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
+    private UserStatus status = UserStatus.OFFLINE;
 
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "last_seen_at")
+    private Instant lastSeenAt;
+
+    @Column(name = "unread_messages_count")
+    private int unreadMessagesCount;
+
+    @OneToMany(mappedBy = "sender")
+    @BatchSize(size = 20)
+    @Builder.Default
     private Set<Message> sentMessages = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<GroupParticipant> groupParticipants = new HashSet<>();
+    @ManyToMany(mappedBy = "participants")
+    @BatchSize(size = 20)
+    @Builder.Default
+    private Set<Conversation> conversations = new HashSet<>();
 
-    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<UnreadMessage> unreadMessages = new HashSet<>();
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "theme",
+                    column = @Column(name = "ui_theme")),
+            @AttributeOverride(name = "notificationEnabled",
+                    column = @Column(name = "notifications_enabled"))
+    })
+    private UserPreferences preferences = new UserPreferences();
+
 }
+

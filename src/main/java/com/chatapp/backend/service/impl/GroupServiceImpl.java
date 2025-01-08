@@ -2,9 +2,10 @@ package com.chatapp.backend.service.impl;
 
 import com.chatapp.backend.dto.*;
 import com.chatapp.backend.entity.*;
+import com.chatapp.backend.entity.enums.ConversationType;
 import com.chatapp.backend.exception.ApiException;
 import com.chatapp.backend.exception.ErrorCode;
-import com.chatapp.backend.repository.ChatRepository;
+import com.chatapp.backend.repository.ContactRepository;
 import com.chatapp.backend.repository.GroupMembershipRepository;
 import com.chatapp.backend.repository.GroupRepository;
 import com.chatapp.backend.repository.UserRepository;
@@ -21,8 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.chatapp.backend.entity.GroupRole.ADMIN;
-import static com.chatapp.backend.entity.GroupRole.MEMBER;
+import static com.chatapp.backend.entity.enums.GroupRole.ADMIN;
+import static com.chatapp.backend.entity.enums.GroupRole.MEMBER;
 import static com.chatapp.backend.exception.ErrorCode.GROUP_MEMBERSHIP_NOT_FOUND;
 import static com.chatapp.backend.exception.ErrorCode.GROUP_NOT_FOUND;
 
@@ -34,7 +35,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
     private final GroupMembershipRepository groupMembershipRepository;
     private final UserService userService;
-    private final ChatRepository chatRepository;
+    private final ContactRepository contactRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -44,30 +45,30 @@ public class GroupServiceImpl implements GroupService {
 
         User creator = userService.getUserById(createGroupRequestDTO.creatorId());
 
-        Chat chat = Chat.builder()
-                        .type(ChatType.GROUP)
-                        .createdAt(Instant.now())
-                        .build();
-        Chat savedChat = chatRepository.save(chat);
+        Conversation conversation = Conversation.builder()
+                                                .type(ConversationType.GROUP)
+                                                .createdAt(Instant.now())
+                                                .build();
+        Conversation savedConversation = contactRepository.save(conversation);
 
 
         Group group = Group.builder()
                            .name(createGroupRequestDTO.name())
                            .creator(creator)
-                           .chat(savedChat)
+                           .conversation(savedConversation)
                            .createdAt(Instant.now())
                            .build();
         Group savedGroup = groupRepository.save(group);
 
 
         //Add creator as a member (admin)
-        GroupParticipant creatorMembership = GroupParticipant.builder()
-                                                             .user(creator)
-                                                             .group(savedGroup)
-                                                             .role(ADMIN)
-                                                             .joinedAt(Instant.now())
-                                                             .isActive(true)
-                                                             .build();
+        GroupSetting creatorMembership = GroupSetting.builder()
+                                                     .user(creator)
+                                                     .group(savedGroup)
+                                                     .role(ADMIN)
+                                                     .joinedAt(Instant.now())
+                                                     .isActive(true)
+                                                     .build();
 
         groupMembershipRepository.save(creatorMembership);
 
@@ -99,15 +100,15 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public GroupDTO createGroupTest(CreateGroupRequestDTO request) {
         // Create chat first
-        Chat chat = Chat.builder()
-                        .type(ChatType.GROUP)
-                        .createdAt(Instant.now())
-                        .build();
-        Chat savedChat = chatRepository.save(chat);
+        Conversation conversation = Conversation.builder()
+                                                .type(ConversationType.GROUP)
+                                                .createdAt(Instant.now())
+                                                .build();
+        Conversation savedConversation = contactRepository.save(conversation);
 
         // Create group
         Group group = Group.builder()
-                           .chat(savedChat)
+                           .conversation(savedConversation)
                            .name(request.name())
                            .description(request.description())
                            .creator(userRepository.getReferenceById(request.creatorId()))
@@ -117,18 +118,18 @@ public class GroupServiceImpl implements GroupService {
         Group savedGroup = groupRepository.save(group);
 
         // Add members
-        Set<GroupParticipant> memberships = new HashSet<>();
+        Set<GroupSetting> memberships = new HashSet<>();
         request.memberIds().forEach(userId -> {
             User user = userRepository.getReferenceById(userId);
             boolean isAdmin = userId.equals(request.creatorId());
 
-            GroupParticipant membership = GroupParticipant.builder()
-                                                          .group(savedGroup)
-                                                          .user(user)
-                                                          .role(isAdmin ? ADMIN : MEMBER)
-                                                          .joinedAt(Instant.now())
-                                                          .isActive(true)
-                                                          .build();
+            GroupSetting membership = GroupSetting.builder()
+                                                  .group(savedGroup)
+                                                  .user(user)
+                                                  .role(isAdmin ? ADMIN : MEMBER)
+                                                  .joinedAt(Instant.now())
+                                                  .isActive(true)
+                                                  .build();
             memberships.add(membership);
         });
         savedGroup.setGroupParticipants(memberships);
@@ -150,13 +151,13 @@ public class GroupServiceImpl implements GroupService {
 
 
         members.forEach(member -> {
-            GroupParticipant membership = GroupParticipant.builder()
-                                                          .user(member)
-                                                          .group(group)
-                                                          .role(MEMBER)
-                                                          .joinedAt(Instant.now())
-                                                          .isActive(true)
-                                                          .build();
+            GroupSetting membership = GroupSetting.builder()
+                                                  .user(member)
+                                                  .group(group)
+                                                  .role(MEMBER)
+                                                  .joinedAt(Instant.now())
+                                                  .isActive(true)
+                                                  .build();
             groupMembershipRepository.save(membership);
         });
 
@@ -190,13 +191,13 @@ public class GroupServiceImpl implements GroupService {
             if (group.getGroupParticipants().stream()
                      .noneMatch(m -> m.getUser().getId().equals(userId))) {
                 User user = userRepository.getReferenceById(userId);
-                GroupParticipant membership = GroupParticipant.builder()
-                                                              .group(group)
-                                                              .user(user)
-                                                              .role(MEMBER)
-                                                              .joinedAt(Instant.now())
-                                                              .isActive(true)
-                                                              .build();
+                GroupSetting membership = GroupSetting.builder()
+                                                      .group(group)
+                                                      .user(user)
+                                                      .role(MEMBER)
+                                                      .joinedAt(Instant.now())
+                                                      .isActive(true)
+                                                      .build();
                 group.getGroupParticipants().add(membership);
             }
         });
@@ -234,8 +235,8 @@ public class GroupServiceImpl implements GroupService {
         group.setDescription(request.description());
 
         // Update chat name to maintain consistency
-        Chat chat = group.getChat();
-        chatRepository.save(chat);
+        Conversation conversation = group.getConversation();
+        contactRepository.save(conversation);
 
         return mapToGroupDTO(groupRepository.save(group));
     }
@@ -248,8 +249,8 @@ public class GroupServiceImpl implements GroupService {
                                      .orElseThrow(() -> new ApiException(GROUP_NOT_FOUND));
         User user = userService.getUserById(userId);
 
-        GroupParticipant membership = groupMembershipRepository.findByUserIdAndGroupId(userId, groupId)
-                                                               .orElseThrow(() -> new ApiException(GROUP_MEMBERSHIP_NOT_FOUND));
+        GroupSetting membership = groupMembershipRepository.findByUserIdAndGroupId(userId, groupId)
+                                                           .orElseThrow(() -> new ApiException(GROUP_MEMBERSHIP_NOT_FOUND));
         membership.setActive(false);
 
 //        // Notify removed member
@@ -266,7 +267,7 @@ public class GroupServiceImpl implements GroupService {
     public List<User> getGroupMembers(Long groupId) {
         log.debug("Fetching members for group ID: {}", groupId);
         return groupMembershipRepository.findByGroupIdAndIsActiveTrue(groupId).stream()
-                                        .map(GroupParticipant::getUser)
+                                        .map(GroupSetting::getUser)
                                         .collect(Collectors.toList());
     }
 
@@ -282,8 +283,8 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public boolean isUserAdminOfGroup(Long userId, Long groupId) {
         log.debug("Checking if user {} is admin of group {}", userId, groupId);
-        GroupParticipant groupParticipant = groupMembershipRepository.findByUserIdAndGroupId(userId, groupId)
-                                                                     .orElseThrow(() -> new ApiException(GROUP_MEMBERSHIP_NOT_FOUND));
-        return groupParticipant.getRole().equals(ADMIN);
+        GroupSetting groupSetting = groupMembershipRepository.findByUserIdAndGroupId(userId, groupId)
+                                                             .orElseThrow(() -> new ApiException(GROUP_MEMBERSHIP_NOT_FOUND));
+        return groupSetting.getRole().equals(ADMIN);
     }
 }

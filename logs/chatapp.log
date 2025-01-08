@@ -19,13 +19,13 @@
 	Isolation level: undefined/unknown
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2024-12-31 16:03:35 [restartedMain] ERROR o.s.o.j.LocalContainerEntityManagerFactoryBean - Failed to initialize JPA EntityManagerFactory: Entity 'com.chatapp.backend.entity.GroupParticipant' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
-2024-12-31 16:03:35 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Entity 'com.chatapp.backend.entity.GroupParticipant' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
+2024-12-31 16:03:35 [restartedMain] ERROR o.s.o.j.LocalContainerEntityManagerFactoryBean - Failed to initialize JPA EntityManagerFactory: Entity 'com.chatapp.backend.entity.GroupSetting' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
+2024-12-31 16:03:35 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Entity 'com.chatapp.backend.entity.GroupSetting' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
 2024-12-31 16:03:35 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
 2024-12-31 16:03:35 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
 2024-12-31 16:03:35 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
 2024-12-31 16:03:35 [restartedMain] ERROR o.s.boot.SpringApplication - Application run failed
-org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Entity 'com.chatapp.backend.entity.GroupParticipant' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
+org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Entity 'com.chatapp.backend.entity.GroupSetting' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
 	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1802)
 	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:601)
 	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:523)
@@ -45,7 +45,7 @@ org.springframework.beans.factory.BeanCreationException: Error creating bean wit
 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at org.springframework.boot.devtools.restart.RestartLauncher.run(RestartLauncher.java:50)
-Caused by: org.hibernate.AnnotationException: Entity 'com.chatapp.backend.entity.GroupParticipant' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
+Caused by: org.hibernate.AnnotationException: Entity 'com.chatapp.backend.entity.GroupSetting' has an '@IdClass' with properties 'groupId', 'userId' which do not match properties of the entity class
 	at org.hibernate.boot.model.internal.EntityBinder.processIdPropertiesIfNotAlready(EntityBinder.java:1109)
 	at org.hibernate.boot.model.internal.EntityBinder.handleIdentifier(EntityBinder.java:418)
 	at org.hibernate.boot.model.internal.EntityBinder.bindEntityClass(EntityBinder.java:250)

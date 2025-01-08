@@ -1,4 +1,4 @@
-package com.chatapp.backend.entity;
+package com.chatapp.backend.entity.enums;
 
 public enum GroupRole {
     MEMBER,

@@ -1,12 +1,12 @@
 package com.chatapp.backend.controller;
 
 
-import com.chatapp.backend.dto.ChatDTO;
+import com.chatapp.backend.dto.ContactDTO;
 import com.chatapp.backend.dto.UserDTO;
 import com.chatapp.backend.dto.request.SignInDTO;
 import com.chatapp.backend.dto.request.SignUpDTO;
 import com.chatapp.backend.entity.User;
-import com.chatapp.backend.service.ChatService;
+import com.chatapp.backend.service.ContactService;
 import com.chatapp.backend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private final ChatService chatService;
+    private final ContactService contactService;
 
     //Register a new user
     @PostMapping("/register")
@@ -47,10 +47,10 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/chats")
-    public ResponseEntity<List<ChatDTO>> getUserChats(@PathVariable Long userId,
-            @RequestParam(required = false) Boolean unreadOnly) {
+    public ResponseEntity<List<ContactDTO>> getUserChats(@PathVariable Long userId,
+                                                         @RequestParam(required = false) Boolean unreadOnly) {
         log.info("Fetching chats for user, unreadOnly: {}", unreadOnly);
-        List<ChatDTO> chats = chatService.getUserChats(userId, unreadOnly);
+        List<ContactDTO> chats = contactService.getUserChats(userId, unreadOnly);
         return ResponseEntity.ok(chats);
     }
 

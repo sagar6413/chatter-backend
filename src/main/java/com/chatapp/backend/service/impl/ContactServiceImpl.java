@@ -2,13 +2,15 @@ package com.chatapp.backend.service.impl;
 
 import com.chatapp.backend.dto.*;
 import com.chatapp.backend.entity.*;
+import com.chatapp.backend.entity.enums.ConversationType;
+import com.chatapp.backend.entity.enums.GroupRole;
 import com.chatapp.backend.exception.ApiException;
 import com.chatapp.backend.exception.ErrorCode;
-import com.chatapp.backend.repository.ChatRepository;
+import com.chatapp.backend.repository.ContactRepository;
 import com.chatapp.backend.repository.MessageRepository;
 import com.chatapp.backend.repository.UnreadMessageRepository;
 import com.chatapp.backend.repository.UserRepository;
-import com.chatapp.backend.service.ChatService;
+import com.chatapp.backend.service.ContactService;
 import com.chatapp.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,14 +24,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.chatapp.backend.exception.ErrorCode.CHAT_NOT_FOUND;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ChatServiceImpl implements ChatService {
+public class ContactServiceImpl implements ContactService {
     private final MessageRepository messageRepository;
-    private final ChatRepository chatRepository;
+    private final ContactRepository contactRepository;
     private final UserRepository userRepository;
     private final UserService userService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -37,14 +37,14 @@ public class ChatServiceImpl implements ChatService {
 
     @Transactional
     @Override
-    public ChatDTO createChat(CreateChatRequestDTO request) {
-        if (request.type() == ChatType.PRIVATE && request.participantIds().size() == 2) {
-            Optional<Chat> existingChat = chatRepository.findOneToOneChatByParticipants(
+    public ContactDTO createContact(CreateContactRequestDTO request) {
+        if (request.type() == ConversationType.PRIVATE && request.participantIds().size() == 2) {
+            Optional<Conversation> existingContact = contactRepository.findOneToOneContactByParticipants(
                     request.participantIds().get(0),
                     request.participantIds().get(1)
             );
-            if (existingChat.isPresent()) {
-                return mapToChatDTO(existingChat.get());
+            if (existingContact.isPresent()) {
+                return mapToContactDTO(existingContact.get());
             }
         }
 
@@ -53,49 +53,49 @@ public class ChatServiceImpl implements ChatService {
             throw new ApiException(ErrorCode.USER_NOT_FOUND);
         }
 
-        Chat chat = Chat.builder()
-                        .type(request.type())
-                        .createdAt(Instant.now())
-                        .build();
+        Conversation conversation = Conversation.builder()
+                                                .type(request.type())
+                                                .createdAt(Instant.now())
+                                                .build();
 
-        Chat savedChat = chatRepository.save(chat);
+        Conversation savedConversation = contactRepository.save(conversation);
         participants.forEach(participant -> {
-            GroupParticipant membership = GroupParticipant.builder()
-                                                          .user(participant)
-                                                          .group(savedChat.getGroup())
-                                                          .role(GroupRole.MEMBER)
-                                                          .isActive(true)
-                                                          .joinedAt(Instant.now())
-                                                          .build();
-            savedChat.getGroup().getGroupParticipants().add(membership);
+            GroupSetting membership = GroupSetting.builder()
+                                                  .user(participant)
+                                                  .group(savedConversation.getGroup())
+                                                  .role(GroupRole.MEMBER)
+                                                  .isActive(true)
+                                                  .joinedAt(Instant.now())
+                                                  .build();
+            savedConversation.getGroup().getGroupParticipants().add(membership);
         });
 
-        return mapToChatDTO(chatRepository.save(savedChat));
+        return mapToContactDTO(contactRepository.save(savedConversation));
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<ChatDTO> getUserChats(Long userId, Boolean unreadOnly) {
-        List<Chat> chats = Boolean.TRUE.equals(unreadOnly)
-                ? chatRepository.findChatsWithUnreadMessages(userId)
-                : chatRepository.findChatsByUserId(userId);
+    public List<ContactDTO> getUserContacts(Long userId, Boolean unreadOnly) {
+        List<Conversation> conversations = Boolean.TRUE.equals(unreadOnly)
+                ? contactRepository.findContactsWithUnreadMessages(userId)
+                : contactRepository.findContactsByUserId(userId);
 
-        return chats.stream()
-                    .map(this::getChatDTO)
-                    .collect(Collectors.toList());
+        return conversations.stream()
+                            .map(this::getContactDTO)
+                            .collect(Collectors.toList());
     }
 
 
 
-    private ChatDTO getChatDTO(Chat chat) {
-        Message latestMessage = messageRepository.findLatestMessage(chat.getId());
-        return ChatDTO.builder()
-                      .id(chat.getId())
-                      .type(chat.getType())
-                      .participants(mapToUserDTOs(chat.getGroup().getGroupParticipants().stream().map(GroupParticipant::getUser).collect(Collectors.toList())))
-                      .latestMessage(latestMessage != null ? mapToMessageDto(latestMessage) : null)
-                      .unreadCount((long) chat.getUnreadMessages().size())
-                      .build();
+    private ContactDTO getContactDTO(Conversation conversation) {
+        Message latestMessage = messageRepository.findLatestMessage(conversation.getContact_id());
+        return ContactDTO.builder()
+                         .id(conversation.getContact_id())
+                         .type(conversation.getType())
+                         .participants(mapToUserDTOs(conversation.getGroup().getGroupParticipants().stream().map(GroupSetting::getUser).collect(Collectors.toList())))
+                         .latestMessage(latestMessage != null ? mapToMessageDto(latestMessage) : null)
+                         .unreadCount((long) conversation.getUnreadMessages().size())
+                         .build();
     }
 
     @Transactional
@@ -103,11 +103,11 @@ public class ChatServiceImpl implements ChatService {
     public void sendPrivateMessage(MessageDTO messageDTO) {
         User sender = userService.getUserById(messageDTO.senderId());
         User recipient = userService.getUserById(messageDTO.receiverId());
-        Chat chat = findOrCreateOneToOneChat(sender, recipient);
+        Conversation conversation = findOrCreateOneToOneContact(sender, recipient);
 
         Message message = Message.builder()
                                  .sender(sender)
-                                 .chat(chat)
+                                 .conversation(conversation)
                                  .content(messageDTO.content())
                                  .createdAt(Instant.now())
                                  .build();
@@ -129,42 +129,42 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Transactional
-    public Chat findOrCreateOneToOneChat(User user1, User user2) {
-        log.info("Finding or creating one-to-one chat between users {} and {}", user1.getId(), user2.getId());
+    public Conversation findOrCreateOneToOneContact(User user1, User user2) {
+        log.info("Finding or creating one-to-one contact between users {} and {}", user1.getId(), user2.getId());
 
-        return chatRepository.findOneToOneChatByParticipants(user1.getId(), user2.getId())
+        return contactRepository.findOneToOneContactByParticipants(user1.getId(), user2.getId())
                              .orElseGet(() -> {
-                                 Chat chat = Chat.builder()
-                                                 .type(ChatType.PRIVATE)
-                                                 .createdAt(Instant.now())
-                                                 .build();
+                                 Conversation conversation = Conversation.builder()
+                                                                         .type(ConversationType.PRIVATE)
+                                                                         .createdAt(Instant.now())
+                                                                         .build();
 
-                                 Chat savedChat = chatRepository.save(chat);
+                                 Conversation savedConversation = contactRepository.save(conversation);
 
                                  // Add both users as participants
                                  List.of(user1, user2).forEach(user -> {
-                                     GroupParticipant membership = GroupParticipant.builder()
-                                                                                   .user(user)
-                                                                                   .group(savedChat.getGroup())
-                                                                                   .role(GroupRole.MEMBER)
-                                                                                   .isActive(true)
-                                                                                   .joinedAt(Instant.now())
-                                                                                   .build();
-                                     savedChat.getGroup().getGroupParticipants().add(membership);
+                                     GroupSetting membership = GroupSetting.builder()
+                                                                           .user(user)
+                                                                           .group(savedConversation.getGroup())
+                                                                           .role(GroupRole.MEMBER)
+                                                                           .isActive(true)
+                                                                           .joinedAt(Instant.now())
+                                                                           .build();
+                                     savedConversation.getGroup().getGroupParticipants().add(membership);
                                  });
 
-                                 return chatRepository.save(savedChat);
+                                 return contactRepository.save(savedConversation);
                              });
     }
 
     @Transactional
     @Override
-    public void saveAndProcessGroupMessage(Long chatId, MessageDTO messageDTO) {
-        Chat chat = chatRepository.findById(chatId)
-                                  .orElseThrow(() -> new ApiException(CHAT_NOT_FOUND));
+    public void saveAndProcessGroupMessage(Long contactId, MessageDTO messageDTO) {
+        Conversation conversation = contactRepository.findById(contactId)
+                                                     .orElseThrow(() -> new ApiException(CONTACT_NOT_FOUND));
 
         Message message = Message.builder()
-                                 .chat(chat)
+                                 .conversation(conversation)
                                  .sender(userRepository.getReferenceById(messageDTO.senderId()))
                                  .content(messageDTO.content())
                                  .createdAt(Instant.now())
@@ -174,9 +174,9 @@ public class ChatServiceImpl implements ChatService {
         MessageResponseDTO responseDTO = mapToResponseDTO(savedMessage);
 
         // Create unread entries and notify online participants
-        chat.getGroup().getGroupParticipants().stream()
-            .filter(m -> !m.getUser().getId().equals(messageDTO.senderId()))
-            .forEach(member -> {
+        conversation.getGroup().getGroupParticipants().stream()
+                    .filter(m -> !m.getUser().getId().equals(messageDTO.senderId()))
+                    .forEach(member -> {
                 if (isUserOffline(member.getUser())) {
                     createUnreadMessage(savedMessage, member.getUser());
                 }
@@ -191,9 +191,9 @@ public class ChatServiceImpl implements ChatService {
 
     @Transactional
     @Override
-    public void markMessagesAsRead(Long chatId, Long lastReadMessageId, Long userId) {
+    public void markMessagesAsRead(Long contactId, Long lastReadMessageId, Long userId) {
         List<UnreadMessage> unreadMessages = unreadMessageRepository
-                .findUnreadMessagesForUserAndChat(userId, chatId, lastReadMessageId);
+                .findUnreadMessagesForUserAndContact(userId, contactId, lastReadMessageId);
 
         unreadMessages.forEach(unreadMessage -> {
             unreadMessage.setReceivedAt(Instant.now());
@@ -211,9 +211,9 @@ public class ChatServiceImpl implements ChatService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<ChatMessageDTO> getChatHistory(Long chatId) {
-        return messageRepository.findByChatId(chatId).stream()
-                                .map(this::mapToChatMessageDTO)
+    public List<ContactMessageDTO> getContactHistory(Long contactId) {
+        return messageRepository.findByContactId(contactId).stream()
+                                .map(this::mapToContactMessageDTO)
                                 .collect(Collectors.toList());
     }
 
@@ -231,10 +231,10 @@ public class ChatServiceImpl implements ChatService {
         unreadMessageRepository.save(unreadMessage);
     }
 
-    // Add these methods to the ChatServiceImpl class
+    // Add these methods to the ContactServiceImpl class
 
-    private ChatDTO mapToChatDTO(Chat chat) {
-        return getChatDTO(chat);
+    private ContactDTO mapToContactDTO(Conversation conversation) {
+        return getContactDTO(conversation);
     }
 
     private List<UserDTO> mapToUserDTOs(List<User> users) {
@@ -249,27 +249,27 @@ public class ChatServiceImpl implements ChatService {
     private List<MessageDTO> mapToMessageDto(Message message) {
         return List.of(MessageDTO.builder()
                                  .id(message.getId())
-                                 .chatId(message.getChat().getId())
+                                 .contactId(message.getConversation().getContact_id())
                                  .senderId(message.getSender().getId())
                                  .content(message.getContent())
                                  .createdAt(message.getCreatedAt())
                                  .build());
     }
 
-    private ChatMessageDTO mapToChatMessageDTO(Message message) {
-        return ChatMessageDTO.builder()
-                             .id(message.getId())
-                             .chatId(message.getChat().getId())
-                             .senderId(message.getSender().getId())
-                             .content(message.getContent())
-                             .createdAt(message.getCreatedAt())
-                             .build();
+    private ContactMessageDTO mapToContactMessageDTO(Message message) {
+        return ContactMessageDTO.builder()
+                                .id(message.getId())
+                                .contactId(message.getConversation().getContact_id())
+                                .senderId(message.getSender().getId())
+                                .content(message.getContent())
+                                .createdAt(message.getCreatedAt())
+                                .build();
     }
 
     private MessageResponseDTO mapToResponseDTO(Message message) {
         return MessageResponseDTO.builder()
                                  .id(message.getId())
-                                 .chatId(message.getChat().getId())
+                                 .contactId(message.getConversation().getContact_id())
                                  .senderId(message.getSender().getId())
                                  .content(message.getContent())
                                  .createdAt(message.getCreatedAt())
@@ -281,7 +281,7 @@ public class ChatServiceImpl implements ChatService {
                        .id(group.getId())
                        .name(group.getName())
                        .description(group.getDescription())
-                       .members(mapToUserDTOs(group.getGroupParticipants().stream().map(GroupParticipant::getUser).collect(Collectors.toList())))
+                       .members(mapToUserDTOs(group.getGroupParticipants().stream().map(GroupSetting::getUser).collect(Collectors.toList())))
                        .createdAt(group.getCreatedAt())
                        .build();
     }
