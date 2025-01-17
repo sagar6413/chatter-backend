@@ -3,9 +3,6 @@ package com.chatapp.backend.entity;
 import com.chatapp.backend.entity.enums.ReactionType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "reactions", indexes = {

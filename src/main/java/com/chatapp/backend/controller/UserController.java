@@ -1,96 +1,87 @@
 package com.chatapp.backend.controller;
 
-
-import com.chatapp.backend.dto.ContactDTO;
-import com.chatapp.backend.dto.UserDTO;
-import com.chatapp.backend.dto.request.SignInDTO;
-import com.chatapp.backend.dto.request.SignUpDTO;
-import com.chatapp.backend.entity.User;
-import com.chatapp.backend.service.ContactService;
+import com.chatapp.backend.dto.request.SignInRequest;
+import com.chatapp.backend.dto.request.SignUpRequest;
+import com.chatapp.backend.dto.request.UserPreferenceRequest;
+import com.chatapp.backend.dto.request.UserRequest;
+import com.chatapp.backend.dto.response.AuthenticationResponse;
+import com.chatapp.backend.dto.response.UserPreferenceResponse;
+import com.chatapp.backend.dto.response.UserResponse;
+import com.chatapp.backend.entity.enums.UserStatus;
 import com.chatapp.backend.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
 
     private final UserService userService;
-    private final ContactService contactService;
 
-    //Register a new user
-    @PostMapping("/register")
-    public ResponseEntity<UserDTO> registerUser(@Valid @RequestBody SignUpDTO signUpDTO) {
-        User registeredUser = userService.registerUser(signUpDTO);
-        return new ResponseEntity<>(mapToDTO(registeredUser), HttpStatus.CREATED);
+
+    //auth related
+    @PostMapping("/signup")
+    public ResponseEntity<AuthenticationResponse> signUp(@Valid @RequestBody SignUpRequest request) {
+        log.info("Processing signup request for user: {}", request.username());
+        return ResponseEntity.ok(userService.signUp(request));
     }
 
-    //Login a user
-    @PostMapping("/login")
-    public ResponseEntity<UserDTO> loginUser(@RequestBody SignInDTO signInDTO) {
-        User loggedInUser = userService.loginUser(signInDTO);
-        return new ResponseEntity<>(mapToDTO(loggedInUser), HttpStatus.OK);
+
+    @PostMapping("/signin")
+    public ResponseEntity<AuthenticationResponse> signIn(@Valid @RequestBody SignInRequest request) {
+        log.info("Processing signin request for user: {}", request.username());
+        return ResponseEntity.ok(userService.signIn(request));
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
-        User user = userService.getUserById(userId);
-        return new ResponseEntity<>(mapToDTO(user), HttpStatus.OK);
+    @PostMapping("/refresh")
+    public ResponseEntity<Void> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+        log.info("Refreshing token for user.");
+        userService.refreshToken(request, response);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{userId}/chats")
-    public ResponseEntity<List<ContactDTO>> getUserChats(@PathVariable Long userId,
-                                                         @RequestParam(required = false) Boolean unreadOnly) {
-        log.info("Fetching chats for user, unreadOnly: {}", unreadOnly);
-        List<ContactDTO> chats = contactService.getUserChats(userId, unreadOnly);
-        return ResponseEntity.ok(chats);
-    }
+    //user related
 
     @GetMapping("/username/{username}")
-    public ResponseEntity<UserDTO> getUserByUsername(@PathVariable String username) {
-        User user = userService.getUserByUsername(username);
-        return new ResponseEntity<>(mapToDTO(user), HttpStatus.OK);
+    public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
+        log.info("Fetching user details for username: {}", username);
+        return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
-    @PostMapping("/{userId}/online")
-    public ResponseEntity<Void> setUserOnline(@PathVariable Long userId) {
-        userService.setUserOnline(userId);
-        return ResponseEntity.ok().build();
+    @PutMapping("/{username}")
+    public ResponseEntity<UserResponse> updateUser(@PathVariable String username, @Valid @RequestBody UserRequest request) {
+        log.info("Updating details for user: {}", username);
+        return ResponseEntity.ok(userService.updateUser(username, request));
     }
 
-    @PostMapping("/{userId}/offline")
-    public ResponseEntity<Void> setUserOffline(@PathVariable Long userId) {
-        userService.setUserOffline(userId);
-        return ResponseEntity.ok().build();
+
+    @PutMapping("/me/preferences")
+    public ResponseEntity<UserPreferenceResponse> updatePreferences(@Valid @RequestBody UserPreferenceRequest request) {
+        log.info("Updating preference");
+        return ResponseEntity.ok(userService.updatePreferences(request));
     }
 
-    @PutMapping("/{userId}/displayname")
-    public ResponseEntity<UserDTO> updateDisplayName(@PathVariable Long userId, @RequestBody String displayName) {
-        User updatedUser = userService.updateDisplayName(userId, displayName);
-        return ResponseEntity.ok(mapToDTO(updatedUser));
+
+    @PutMapping("/{username}/status")
+    public ResponseEntity<UserStatus> updateUserStatus(@PathVariable String username, @RequestBody UserStatus status) {
+        log.info("Updating status for user: {} to {}", username, status);
+        return ResponseEntity.ok(userService.updateUserStatus(username, status));
     }
+
 
     @GetMapping("/search")
-    public ResponseEntity<List<UserDTO>> searchUsers(
-            @RequestParam String query,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<Page<UserResponse>> searchUsers(@RequestParam String query, Pageable pageable) {
         log.info("Searching users with query: {}", query);
-        List<UserDTO> users = userService.searchUsers(
-                query
-        );
-        return ResponseEntity.ok((List<UserDTO>) users);
-    }
-
-    private UserDTO mapToDTO(User user) {
-        return new UserDTO(user.getUsername(), user.getDisplayName());
+        return ResponseEntity.ok(userService.searchUsers(query, pageable));
     }
 }

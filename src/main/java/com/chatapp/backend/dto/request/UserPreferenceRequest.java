@@ -1,12 +1,8 @@
 package com.chatapp.backend.dto.request;
 
-import jakarta.validation.constraints.Pattern;
+import com.chatapp.backend.entity.enums.Theme;
 import lombok.Builder;
 
 @Builder
-public record UserPreferenceRequest(
-     boolean notificationEnabled,
-
-    @Pattern(regexp = "^(light|dark)$", message = "Theme must be either 'light' or 'dark'")
-     String theme){
+public record UserPreferenceRequest(boolean notificationEnabled, Theme theme) {
 }

@@ -3,28 +3,35 @@ package com.chatapp.backend.entity;
 import com.chatapp.backend.entity.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.security.Principal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "users",
         indexes = {
-                @Index(name = "idx_user_username", columnList = "username", unique = true),
-                @Index(name = "idx_user_last_active", columnList = "last_active_at")
+                @Index(name = "idx_user_username", columnList = "username", unique = true)
         }
 )
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class User extends BaseEntity {
+@SuperBuilder
+public class User extends BaseEntity implements UserDetails, Principal {
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
+
+    @Column(name = "email", unique = true, nullable = false, length = 100)
+    private String email;
 
     @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
@@ -39,6 +46,15 @@ public class User extends BaseEntity {
 
     @Column(name = "last_seen_at")
     private Instant lastSeenAt;
+
+    @Column(name = "refresh_token", length = 500)
+    String refreshToken;
+
+    @Column(name = "email_verified")
+    boolean emailVerified;
+
+    @Column(name = "is_active")
+    boolean isActive;
 
     @OneToMany(mappedBy = "sender")
     @BatchSize(size = 20)
@@ -59,5 +75,42 @@ public class User extends BaseEntity {
     })
     private UserPreferences preferences = new UserPreferences();
 
+    /**
+     * Returns the authorities granted to the user. Cannot return <code>null</code>.
+     *
+     * @return the authorities, sorted by natural key (never <code>null</code>)
+     */
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return !isActive;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return emailVerified;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return isActive;
+    }
+    @Override
+    public String getName() {
+        return username;
+    }
 }
 

@@ -1,6 +1,7 @@
 spring:
   application:
     name: chatapp
+
   datasource:
     url: jdbc:postgresql://localhost:5432/chat_db
     username: chat_user
@@ -14,28 +15,43 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: true
+    open-in-view: false
 
-  redis:
-    host: localhost
-    port: 6379
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
-logging:
-  level:
-    root: INFO
-    org.springframework: WARN
-    org.springframework.jdbc.core: TRACE
-    org.springframework.cloud.gateway: DEBUG
-    com.chatapp.backend: DEBUG
-  file:
-    name: logs/${spring.application.name}.log
-  logback:
-    rollingpolicy:
-      file-name-pattern: logs/archived/${spring.application.name}/${spring.application.name}.%d{yyyy-MM-dd}.%i.log
-      max-file-size: 10MB
-      total-size-cap: 100MB
-      max-history: 30
-      clean-history-on-start: false
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+#logging:
+#  level:
+#    root: INFO
+#    web: INFO
+#    org.springframework: WARN
+#    org.hibernate: DEBUG
+#    org.springframework.jdbc.core: TRACE
+#    org.springframework.cloud.gateway: DEBUG
+#    com.chatapp.backend: DEBUG
+#  file:
+#    name: logs/${spring.application.name}.log
+#  logback:
+#    rollingpolicy:
+#      file-name-pattern: logs/archived/${spring.application.name}/${spring.application.name}.%d{yyyy-MM-dd}.%i.log
+#      max-file-size: 10MB
+#      total-size-cap: 100MB
+#      max-history: 30
+#      clean-history-on-start: false
+#  pattern:
+#    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+#    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+application:
+  security:
+    jwt:
+      secret-key: F5F371295B3764BEB21E27A7C6359E86BB9C27100F888C330741BC952B20F09E
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+  api:
+    error:
+      base-uri: base-uri:https:"//api.github.com

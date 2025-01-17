@@ -2,9 +2,9 @@ package com.chatapp.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "group_settings")
@@ -40,4 +40,8 @@ public class GroupSettings extends BaseEntity {
 
     @Column(name = "is_public")
     private boolean isPublic = false;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Set<User> admins = new HashSet<>();
 }

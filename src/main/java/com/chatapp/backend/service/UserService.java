@@ -1,28 +1,36 @@
 package com.chatapp.backend.service;
 
-import com.chatapp.backend.dto.UserDTO;
-import com.chatapp.backend.dto.request.SignInDTO;
-import com.chatapp.backend.dto.request.SignUpDTO;
-import com.chatapp.backend.entity.User;
+import com.chatapp.backend.dto.request.SignInRequest;
+import com.chatapp.backend.dto.request.SignUpRequest;
+import com.chatapp.backend.dto.request.UserPreferenceRequest;
+import com.chatapp.backend.dto.request.UserRequest;
+import com.chatapp.backend.dto.response.AuthenticationResponse;
+import com.chatapp.backend.dto.response.UserPreferenceResponse;
+import com.chatapp.backend.dto.response.UserResponse;
+import com.chatapp.backend.entity.enums.UserStatus;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
-    User registerUser(@Valid SignUpDTO signUpDTO);
 
-    User loginUser(SignInDTO signInDTO);
+    AuthenticationResponse signUp(@Valid SignUpRequest request);
 
-    User getUserById(Long userId);
+    AuthenticationResponse signIn(@Valid SignInRequest request);
 
-    User getUserByUsername(String username);
+    UserResponse getUserByUsername(String username);
 
-    User updateDisplayName(Long userId, String displayName);
+    void logout();
 
-    void setUserOffline(Long userId);
+    UserResponse updateUser(String username, @Valid UserRequest request);
 
-    void setUserOnline(Long userId);
+    UserPreferenceResponse updatePreferences(@Valid UserPreferenceRequest request);
 
-    List<UserDTO> searchUsers(String query);
+    UserStatus updateUserStatus(String username, UserStatus status);
 
+    Page<UserResponse> searchUsers(String query, Pageable pageable);
+
+    void refreshToken(HttpServletRequest request, HttpServletResponse response);
 }

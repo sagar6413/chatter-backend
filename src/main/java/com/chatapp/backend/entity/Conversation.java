@@ -1,14 +1,11 @@
 package com.chatapp.backend.entity;
 
 import com.chatapp.backend.entity.enums.ConversationType;
-import com.chatapp.backend.entity.enums.GroupRole;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.io.Serializable;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +18,7 @@ import java.util.Set;
 )
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conversation extends BaseEntity {
