@@ -50,7 +50,7 @@ public class ConversationController {
     }
 
     @PostMapping("/{groupId}/participants")
-    public ResponseEntity<?> addParticipants(@PathVariable Long groupId, @RequestBody Set<String> participantIds) {
+    public ResponseEntity<UserResponse> addParticipants(@PathVariable Long groupId, @RequestBody Set<String> participantIds) {
         log.info("Adding participants to group with ID: {}", groupId);
         return ResponseEntity.ok(conversationService.addParticipants(groupId, participantIds));
     }
