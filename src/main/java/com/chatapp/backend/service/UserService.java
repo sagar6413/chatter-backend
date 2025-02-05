@@ -32,5 +32,5 @@ public interface UserService {
 
     Page<UserResponse> searchUsers(String query, Pageable pageable);
 
-    void refreshToken(HttpServletRequest request, HttpServletResponse response);
+    AuthenticationResponse refreshToken(HttpServletRequest request, HttpServletResponse response);
 }

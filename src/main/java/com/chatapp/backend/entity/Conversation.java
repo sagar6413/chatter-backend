@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,12 +24,29 @@ import java.util.Set;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Conversation extends BaseEntity {
+public class Conversation {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ConversationType type;
-
     // Optimize fetching of participants
     @ManyToMany
     @JoinTable(
@@ -41,20 +61,18 @@ public class Conversation extends BaseEntity {
     @BatchSize(size = 30)
     @Builder.Default
     private Set<User> participants = new HashSet<>();
-
     // Add participant count for quick access
     @Column(name = "participant_count")
     private int participantCount;
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id")
     private Message lastMessage;
-
     // Use @OneToOne with lazy loading and cascade
     @OneToOne(mappedBy = "conversation",
             cascade = CascadeType.ALL
     )
     private GroupSettings groupSettings;
+
 
     // Add helper methods for managing participants
     public void addParticipant(User user) {

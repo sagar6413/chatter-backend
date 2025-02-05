@@ -58,6 +58,7 @@ public class UserServiceImpl implements UserService {
 
         // Create new user
         User user = objectMapper.mapSignUpDTOToUser(request);
+        System.out.println("user: " + user);
 
         User savedUser = userRepository.save(user);
         log.info("User registered successfully. UserId: {}, Username: {}", savedUser.getId(), savedUser.getUsername());
@@ -69,7 +70,11 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtService.generateAccessToken(Collections.singletonMap("userId", user.getId()), user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
+        System.out.println("accessToken: " + accessToken);
+        System.out.println("refreshToken: " + refreshToken);
+        log.info("Updating refresh token for user: {}", user.getId());
         userRepository.updateRefreshToken(user.getId(), refreshToken);
+        log.info("Refresh token updated successfully for user: {}, refresh token: {}", user.getId(), refreshToken);
 
         return AuthenticationResponse.builder().accessToken(accessToken).refreshToken(refreshToken).build();
     }
@@ -88,7 +93,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public AuthenticationResponse refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String authHeader = request.getHeader(AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new RuntimeException("Invalid refresh token");
@@ -96,12 +101,12 @@ public class UserServiceImpl implements UserService {
 
         String refreshToken = authHeader.substring(7);
         String username = jwtService.extractUsername(refreshToken);
-        if (username != null) {
-            User user = getUserByUsernameOrThrow(username);
-            jwtService.validateToken(refreshToken, user);
-            String accessToken = jwtService.generateAccessToken(Collections.singletonMap("fullName", user.getDisplayName()), user);
-            response.setHeader("Authorization", "Bearer " + accessToken);
+        if (username == null) {
+           throw new RuntimeException("Invalid refresh token");
         }
+        User user = getUserByUsernameOrThrow(username);
+        jwtService.validateToken(refreshToken, user);
+        return generateAuthenticationResponse(user);
     }
 
     @Override

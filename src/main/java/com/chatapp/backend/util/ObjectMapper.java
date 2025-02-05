@@ -4,6 +4,8 @@ import com.chatapp.backend.dto.request.*;
 import com.chatapp.backend.dto.response.*;
 import com.chatapp.backend.entity.*;
 import com.chatapp.backend.entity.enums.MediaType;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -17,6 +19,11 @@ import static com.chatapp.backend.entity.enums.UserStatus.OFFLINE;
 
 @Component
 public class ObjectMapper {
+    private final PasswordEncoder passwordEncoder;
+
+    public ObjectMapper(@NotNull PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
     //---------------------------------------------------------------------------------------------
     // User Mappings
     //---------------------------------------------------------------------------------------------
@@ -25,8 +32,10 @@ public class ObjectMapper {
         return User.builder()
                    .username(request.username())
                    .displayName(request.displayName())
-                   .password(request.password())
+                   .password(passwordEncoder.encode(request.password()))
+                   .email(request.email())
                    .status(OFFLINE)
+                   .createdAt(Instant.now())
                    .lastSeenAt(Instant.now())
                    .emailVerified(true)
                    .isActive(true)

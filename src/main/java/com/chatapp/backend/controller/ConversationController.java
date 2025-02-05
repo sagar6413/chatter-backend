@@ -49,11 +49,11 @@ public class ConversationController {
         return ResponseEntity.ok(conversationService.updateGroupSettings(groupId, request));
     }
 
-    @PostMapping("/{groupId}/participants")
-    public ResponseEntity<UserResponse> addParticipants(@PathVariable Long groupId, @RequestBody Set<String> participantIds) {
-        log.info("Adding participants to group with ID: {}", groupId);
-        return ResponseEntity.ok(conversationService.addParticipants(groupId, participantIds));
-    }
+//    @PostMapping("/{groupId}/participants")
+//    public ResponseEntity<UserResponse> addParticipants(@PathVariable Long groupId, @RequestBody Set<String> participantIds) {
+//        log.info("Adding participants to group with ID: {}", groupId);
+//        return ResponseEntity.ok(conversationService.addParticipants(groupId, participantIds));
+//    }
 
     @DeleteMapping("/{groupId}/participants/{username}")
     public ResponseEntity<Set<UserResponse>> removeParticipant(@PathVariable Long groupId, @PathVariable String username) {

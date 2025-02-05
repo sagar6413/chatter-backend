@@ -1,9 +1,10 @@
 package com.chatapp.backend.entity;
 
 import com.chatapp.backend.entity.enums.MessageStatus;
-import com.chatapp.backend.entity.enums.MessageStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.Instant;
 
@@ -25,22 +26,44 @@ import java.time.Instant;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MessageDeliveryStatus extends BaseEntity {
+public class MessageDeliveryStatus {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "message_id", nullable = false)
     private Message message;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageStatus status;
-
     @Column(name = "status_timestamp", nullable = false)
     private Instant statusTimestamp;
+
+    @PreUpdate
+    public void preUpdate() {
+        if (deleted && updatedAt == null) {
+            this.updatedAt = Instant.now();
+        }
+    }
 
     // Add helper methods for state transitions
     public void markAsReceived() {

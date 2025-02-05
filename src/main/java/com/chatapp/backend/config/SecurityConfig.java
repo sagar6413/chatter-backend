@@ -24,7 +24,7 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @EnableMethodSecurity(securedEnabled = true)
 @Slf4j
 public class SecurityConfig {
-    private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/users/auth/register", "/api/v1/users/auth/login", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**"};
+    private static final String[] PUBLIC_ENDPOINTS = {"/api/v1/users/auth/signup", "/api/v1/users/auth/signin", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**"};
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
     private final LogoutHandler logoutHandler;
@@ -42,7 +42,7 @@ public class SecurityConfig {
                    .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                    .authenticationProvider(authenticationProvider)
                    .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                   .logout(logout -> logout.logoutUrl("/api/v1/users/auth/logout")
+                   .logout(logout -> logout.logoutUrl("/api/v1/users/auth/signout")
                                            .addLogoutHandler(logoutHandler)
                                            .logoutSuccessHandler((request, response, authentication) -> SecurityContextHolder.clearContext()))
                    .build();
